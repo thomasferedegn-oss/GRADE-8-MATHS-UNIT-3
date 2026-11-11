@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 8 Mathematics - Interactive Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .option-btn {
+            transition: all 0.3s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .correct-ans {
+            background-color: #10b981 !important; /* Emerald 500 */
+            color: white !important;
+            border-color: #059669 !important;
+        }
+        .wrong-ans {
+            background-color: #ef4444 !important; /* Red 500 */
+            color: white !important;
+            border-color: #dc2626 !important;
+        }
+        .disabled-option {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-800">
+
+    <!-- Container -->
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden relative min-h-[600px] flex flex-col fade-in">
+        
+        <!-- Screen 1: Registration -->
+        <div id="registration-screen" class="p-8 md:p-12 flex flex-col h-full justify-center">
+            <div class="text-center mb-8">
+                <div class="inline-block bg-blue-100 p-4 rounded-full text-blue-600 mb-4">
+                    <i class="fa-solid fa-graduation-cap text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-slate-800">Grade 8 Mathematics</h1>
+                <p class="text-slate-500 mt-2">Unit 3: Linear Equations and Inequalities</p>
+            </div>
+            
+            <div class="max-w-md w-full mx-auto space-y-6">
+                <div id="error-msg" class="hidden bg-red-100 text-red-700 p-3 rounded-lg text-sm text-center font-medium"></div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="student-name" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Enter your full name">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">ID Number <span class="text-red-500">*</span></label>
+                    <input type="text" id="student-id" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Enter your ID number">
+                </div>
+                <button onclick="startQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                    <i class="fa-solid fa-play mr-2"></i> Start Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Quiz -->
+        <div id="quiz-screen" class="hidden flex-col h-full">
+            <!-- Header -->
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-lg text-sm">
+                        Q <span id="current-q-num">1</span>/48
+                    </div>
+                    <div class="w-32 bg-slate-200 rounded-full h-2">
+                        <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 2%"></div>
+                    </div>
+                </div>
+                <!-- Requested Timer Code -->
+                <div id="timer" style="text-align: right; font-weight: bold; color: #e74c3c; padding: 10px; font-size: 1.1rem;"> 
+                    <i class="fa-regular fa-clock"></i> Time: 90m 00s
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 md:p-8 flex-1 overflow-y-auto">
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800 mb-6"></h2>
+                
+                <!-- Dynamic Image Box -->
+                <div id="image-container" class="hidden mb-6 flex justify-center">
+                    <canvas id="question-canvas" width="400" height="400" class="max-w-full h-auto rounded-xl shadow border border-slate-200 bg-white"></canvas>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Buttons generated dynamically -->
+                </div>
+
+                <!-- Instant Feedback Area -->
+                <div id="feedback-area" class="hidden rounded-xl p-5 mb-6 fade-in shadow-inner border-l-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i id="feedback-icon" class="text-2xl"></i>
+                        <h3 id="feedback-title" class="text-lg font-bold"></h3>
+                    </div>
+                    <p id="feedback-exp-en" class="text-slate-700 mb-2 font-medium"></p>
+                    <p id="feedback-exp-am" class="text-slate-600 text-sm font-semibold"></p>
+                </div>
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="prevQuestion()" id="btn-back" class="px-6 py-2 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Back
+                </button>
+                <div class="flex gap-3">
+                    <button onclick="nextQuestion()" id="btn-next" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow">
+                        Skip / Next <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                    <button onclick="submitQuiz()" id="btn-submit" class="hidden px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition shadow shadow-emerald-200">
+                        Submit Quiz <i class="fa-solid fa-check ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 3: Results & Teacher Dashboard Summary -->
+        <div id="result-screen" class="hidden p-8 md:p-12 flex flex-col h-full items-center justify-center text-center fade-in">
+            <div class="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
+                <i class="fa-solid fa-trophy text-5xl text-emerald-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">Quiz Completed!</h2>
+            <p class="text-slate-600 mb-6">Great job, <span id="res-name" class="font-bold"></span> (ID: <span id="res-id" class="font-bold"></span>)</p>
+            
+            <div class="bg-slate-50 w-full max-w-md rounded-2xl p-6 border border-slate-200 shadow-sm mb-8">
+                <div class="text-5xl font-extrabold text-blue-600 mb-2"><span id="final-score">0</span> / 48</div>
+                <p class="text-slate-500 font-medium">Final Score (<span id="final-percentage">0</span>%)</p>
+                <div class="mt-4 grid grid-cols-2 gap-4 text-left">
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <div class="text-emerald-700 text-sm font-bold">Correct</div>
+                        <div id="res-correct" class="text-xl font-bold text-emerald-600">0</div>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                        <div class="text-red-700 text-sm font-bold">Incorrect / Skipped</div>
+                        <div id="res-wrong" class="text-xl font-bold text-red-600">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                <button onclick="sendEmail()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2">
+                    <i class="fa-regular fa-paper-plane"></i> Send to Teacher
+                </button>
+                <button onclick="location.reload()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Restart
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Quiz Data - 48 Questions from Document
+        // Based on Answer Key provided: 
+        // 1.A 2.B 3.C 4.D 5.A 6.B 7.C 8.D 9.A 10.B
+        // 11.C 12.D 13.A 14.B 15.C 16.D 17.A 18.B 19.C 20.D
+        // 21.A 22.B 23.C 24.D 25.A 26.B 27.C 28.D 29.A 30.B
+        // 31.C 32.D 33.A 34.B 35.C 36.D 37.A 38.B 39.C 40.D
+        // 41.A 42.B 43.C 44.D 45.A 46.B 47.C 48.D
+        const quizData = [
+            { q: "Which axis is the horizontal line in the Cartesian coordinate plane?", opts: ["A) x-axis", "B) y-axis", "C) Origin", "D) Quadrant"], ans: 0, 
+              expEn: "The x-axis is always the horizontal line in the Cartesian plane.", expAm: "አግድም መስመር ሁልጊዜ የ x-ዘንግ ይባላል።" },
+            { q: "What are the coordinates of the origin?", opts: ["A) (1, 1)", "B) (0, 0)", "C) (0, 1)", "D) (1, 0)"], ans: 1, 
+              expEn: "The origin is the intersection of the x and y axes, at zero.", expAm: "መነሻው የ x እና y ዘንጎች መገናኛ (0,0) ላይ ነው።" },
+            { q: "Based on Graph 1, in which quadrant is Point A located?", opts: ["A) Quadrant I", "B) Quadrant III", "C) Quadrant II", "D) Quadrant IV"], ans: 2, graphId: 1,
+              expEn: "Point A(-2,5) has negative x and positive y, putting it in Quadrant II.", expAm: "ነጥብ A(-2,5) x አሉታዊ እና y አዎንታዊ ስለሆነ ሩብ 2 ውስጥ ነው።" },
+            { q: "If x > 0 and y < 0, in which quadrant is the point (x, y) located?", opts: ["A) Quadrant I", "B) Quadrant II", "C) Quadrant III", "D) Quadrant IV"], ans: 3, 
+              expEn: "Positive x and negative y coordinate lands in Quadrant IV.", expAm: "x አዎንታዊ እና y አሉታዊ ሲሆን ነጥቡ ሩብ 4 ውስጥ ይገኛል።" },
+            { q: "Based on Graph 1, what are the coordinates of Point B?", opts: ["A) (3, -4)", "B) (-4, 3)", "C) (3, 4)", "D) (-3, -4)"], ans: 0, graphId: 1,
+              expEn: "Point B is 3 units right and 4 units down, so it is (3, -4).", expAm: "ነጥብ B በ x ዘንግ 3 እና በ y ዘንግ -4 ላይ ይገኛል (3, -4)።" },
+            { q: "Based on Graph 1, what are the coordinates of Point C lying on the y-axis?", opts: ["A) (7, 0)", "B) (0, -7)", "C) (-7, 0)", "D) (0, 7)"], ans: 1, graphId: 1,
+              expEn: "Point C is on the y-axis at -7, meaning x is 0. Coordinates: (0,-7).", expAm: "ነጥብ C በ y-ዘንግ ላይ -7 ስለሆነ፣ አስተባባሪው (0,-7) ነው።" },
+            { q: "In Quadrant III, the signs of the coordinates (x, y) are:", opts: ["A) (+, +)", "B) (-, +)", "C) (-, -)", "D) (+, -)"], ans: 2, 
+              expEn: "In Quadrant III, both x and y values are negative.", expAm: "በሩብ 3 ውስጥ፣ ሁለቱም የ x እና y እሴቶች አሉታዊ ናቸው (-,-)።" },
+            { q: "The first coordinate in an ordered pair is called the:", opts: ["A) Ordinate", "B) Origin", "C) Quadrant", "D) Abscissa"], ans: 3, 
+              expEn: "The x-coordinate is also known mathematically as the abscissa.", expAm: "የመጀመሪያው አስተባባሪ (x) አብሲሳ (Abscissa) በመባል ይታወቃል።" },
+            { q: "A point is located 5 units to the left of the y-axis and 2 units above the x-axis. What are its coordinates?", opts: ["A) (-5, 2)", "B) (5, -2)", "C) (2, -5)", "D) (-2, 5)"], ans: 0, 
+              expEn: "Left implies negative x (-5) and above implies positive y (2).", expAm: "ወደ ግራ 5 (-5) እና ወደ ላይ 2 (+2) ስለሆነ (-5, 2) ይሆናል።" },
+            { q: "In which quadrant are all points having (+, +) coordinates?", opts: ["A) Quadrant II", "B) Quadrant I", "C) Quadrant IV", "D) Quadrant III"], ans: 1, 
+              expEn: "Both positive x and y denote Quadrant I.", expAm: "ሁለቱም x እና y አዎንታዊ ሲሆኑ ሩብ 1 ይሆናል።" },
+            { q: "Based on Graph 2, what is the equation of the red line labeled Line L1?", opts: ["A) y = 5", "B) x = -4", "C) x = 5", "D) y = -4"], ans: 2, graphId: 2,
+              expEn: "A vertical line passing through x = 5 has the equation x = 5.", expAm: "ቀዩ ቋሚ መስመር በ x = 5 ላይ ስለሚያልፍ እኩልዮሹ x = 5 ነው።" },
+            { q: "Based on Graph 2, what type of line is the blue line labeled Line L2?", opts: ["A) Vertical line", "B) Diagonal line", "C) Curved line", "D) Horizontal line"], ans: 3, graphId: 2,
+              expEn: "The blue line y = -4 is parallel to the x-axis, making it a horizontal line.", expAm: "ሰማያዊው መስመር ከ x-ዘንግ ጋር ትይዩ የሆነ አግድም መስመር ነው።" },
+            { q: "The graph of the equation y = mx passes through the origin. If m > 0, which quadrants does it pass through?", opts: ["A) I and III", "B) II and IV", "C) I and II", "D) III and IV"], ans: 0, 
+              expEn: "A positive slope (m>0) means the line slants upwards, passing through Quadrants I and III.", expAm: "አዎንታዊ ማዘንበል (m>0) ያለው መስመር በሩብ 1 እና 3 በኩል ያልፋል።" },
+            { q: "Which ordered pair is a solution to the equation y = 3x - 5?", opts: ["A) (0, -2)", "B) (3, 4)", "C) (-1, -2)", "D) (4, 3)"], ans: 1, 
+              expEn: "Substituting x=3: y = 3(3)-5 = 9-5 = 4. So (3,4) is correct.", expAm: "x=3 ስናስገባ፡ y = 3(3)-5 = 4 ይሆናል። ስለዚህ (3,4) ትክክል ነው።" },
+            { q: "If the point P(a, 3) lies on the line given by 12x - 2y = 0, what is the value of a?", opts: ["A) 2", "B) 1/4", "C) 1/2", "D) 6"], ans: 2, 
+              expEn: "Substitute y=3: 12a - 2(3) = 0 => 12a = 6 => a = 1/2.", expAm: "y=3 ስናስገባ፡ 12a - 6 = 0 => 12a = 6 => a = 1/2 ይሆናል።" },
+            { q: "In the equation y = 2x + 1, what is the value of y when x = -1?", opts: ["A) 1", "B) 3", "C) 0", "D) -1"], ans: 3, 
+              expEn: "y = 2(-1) + 1 = -2 + 1 = -1.", expAm: "y = 2(-1) + 1 = -2 + 1 = -1 ይሆናል።" },
+            { q: "Which of the following is a linear equation in two variables?", opts: ["A) 3x + y = 4", "B) x = -5", "C) y = 1/2", "D) 3x + 1 = 4 - x"], ans: 0, 
+              expEn: "3x + y = 4 contains both variables x and y with a degree of 1.", expAm: "3x + y = 4 ሁለቱንም ተለዋዋጮች x እና y ይዟል።" },
+            { q: "The line x = 3 is parallel to which axis?", opts: ["A) x-axis", "B) y-axis", "C) The origin", "D) y = 3"], ans: 1, 
+              expEn: "x = 3 is a vertical line, which is parallel to the y-axis.", expAm: "x = 3 ቋሚ መስመር ነው፣ ስለዚህ ከ y-ዘንግ ጋር ትይዩ ነው።" },
+            { q: "Consider the equation 3y - 2x = 1. What is the value of y when x = 1?", opts: ["A) -1/3", "B) 0", "C) 1", "D) 3"], ans: 2, 
+              expEn: "3y - 2(1) = 1 => 3y = 3 => y = 1.", expAm: "x=1 ስናስገባ፡ 3y - 2(1) = 1 => 3y = 3 => y = 1 ይሆናል።" },
+            { q: "What is the y-value of the coordinate on the graph of y = -x when x = -10?", opts: ["A) -10", "B) 0", "C) 1", "D) 10"], ans: 3, 
+              expEn: "y = -(-10) = 10.", expAm: "y = -(-10) = 10 ይሆናል።" },
+            { q: "Which of the following is a linear inequality in one variable?", opts: ["A) x + 8 > 3", "B) 7x + (1/2)x = 4", "C) 2x^2 - 1 < (1/2)x - 5", "D) 3x + 5y = 4"], ans: 0, 
+              expEn: "x + 8 > 3 has one variable and is an inequality.", expAm: "x + 8 > 3 አንድ ተለዋዋጭ ያለው የኢ-እኩልነት አገላለጽ ነው።" },
+            { q: "According to transformation rules, if you multiply both sides of an inequality by the same negative number, what happens to the inequality sign?", opts: ["A) It remains unchanged", "B) It is reversed", "C) It becomes an equation", "D) It becomes undefined"], ans: 1, 
+              expEn: "Multiplying/dividing an inequality by a negative number reverses the sign direction.", expAm: "በአሉታዊ ቁጥር ስናባዛ ወይም ስናካፍል፣ የኢ-እኩልነት ምልክቱ አቅጣጫውን ይቀይራል።" },
+            { q: "Which inequality is equivalent to x + 1/2 < 5/2?", opts: ["A) x > 2", "B) x < 3", "C) x < 2", "D) x > 3"], ans: 2, 
+              expEn: "Subtract 1/2 from both sides: x < 5/2 - 1/2 => x < 4/2 => x < 2.", expAm: "ከሁለቱም በኩል 1/2 ስንቀንስ፡ x < 4/2 => x < 2 ይሆናል።" },
+            { q: "What is the solution to the inequality -2x > 5?", opts: ["A) x > 5/2", "B) x > -5/2", "C) x < 5/2", "D) x < -5/2"], ans: 3, 
+              expEn: "Divide by -2 and reverse the sign: x < -5/2.", expAm: "በ -2 ስናካፍል ምልክቱ ይገለበጣል፡ x < -5/2።" },
+            { q: "Solve the inequality x + 2.4 <= 6.4 in the domain of rational numbers.", opts: ["A) x <= 4", "B) x >= 4", "C) x <= 8.8", "D) x >= -4"], ans: 0, 
+              expEn: "x <= 6.4 - 2.4 => x <= 4.0.", expAm: "x <= 6.4 - 2.4 => x <= 4.0 ይሆናል።" },
+            { q: "Which of the following inequalities has no solution in the set of rational numbers?", opts: ["A) 1/2 x - 4 < 1/4 (2x - 5)", "B) 5x + 3/4 > 11x + 1 - 6x", "C) x + 2.4 <= 6.4", "D) 3x - 7 >= 11"], ans: 1, 
+              expEn: "5x + 3/4 > 5x + 1 simplifies to 3/4 > 1, which is a false statement. Thus, no solution.", expAm: "5x + 3/4 > 5x + 1 ሲሰላ 3/4 > 1 ይሆናል፣ ይህ ደግሞ ስህተት ስለሆነ መፍትሄ የለውም።" },
+            { q: "Solve the inequality 3x - 7 >= 11.", opts: ["A) x <= 6", "B) x < 6", "C) x >= 6", "D) x > 6"], ans: 2, 
+              expEn: "3x >= 18 => x >= 6.", expAm: "3x >= 18 => x >= 6 ይሆናል።" },
+            { q: "Any two inequalities with the same solution set are called:", opts: ["A) Linear equations", "B) Transformations", "C) Similar equations", "D) Equivalent inequalities"], ans: 3, 
+              expEn: "Inequalities sharing the exact same solution are defined as equivalent.", expAm: "ተመሳሳይ መፍትሄ ያላቸው ኢ-እኩልነቶች 'አቻ ኢ-እኩልነቶች' (Equivalent) ይባላሉ።" },
+            { q: "Solve the inequality (1/2)x > 5/2.", opts: ["A) x > 5", "B) x < 5", "C) x > 10", "D) x < 10"], ans: 0, 
+              expEn: "Multiply both sides by 2: x > 5.", expAm: "ሁለቱንም በኩል በ 2 ስናባዛ፡ x > 5 ይሆናል።" },
+            { q: "Solve the inequality 3x < 9x + 4.", opts: ["A) x < -2/3", "B) x > -2/3", "C) x < 2/3", "D) x > 2/3"], ans: 1, 
+              expEn: "3x - 9x < 4 => -6x < 4 => x > -4/6 => x > -2/3.", expAm: "-6x < 4 => x > -4/6 => x > -2/3 ይሆናል።" },
+            { q: "The phrase 'Five less than a number x' can be translated into the mathematical expression:", opts: ["A) 5 - x", "B) 5x", "C) x - 5", "D) 5/x"], ans: 2, 
+              expEn: "Start with x, and make it five less: x - 5.", expAm: "ከአንድ ቁጥር (x) ላይ አምስት መቀነስ ማለት x - 5 ነው።" },
+            { q: "The relationship between Celsius and Fahrenheit is C = (5/9)(F - 32). How is F expressed in terms of C?", opts: ["A) F = (5/9)C - 32", "B) F = (9/5)C - 32", "C) F = (5/9)C + 32", "D) F = (9/5)C + 32"], ans: 3, 
+              expEn: "Multiply by 9/5 then add 32: F = (9/5)C + 32.", expAm: "በ 9/5 አባዝተን 32 ስንደምር፡ F = (9/5)C + 32 እናገኛለን።" },
+            { q: "The sum of the ages of a mother and her daughter is 68. The mother is 22 years older than her daughter. How old is the daughter?", opts: ["A) 23", "B) 45", "C) 22", "D) 68"], ans: 0, 
+              expEn: "d + (d+22) = 68 => 2d = 46 => d = 23.", expAm: "d + (d+22) = 68 => 2d = 46 => d = 23 አመት ይሆናል።" },
+            { q: "Samuel can do a work in 15 days, and Saron in 10 days. In how many days will they finish the work if they do it together?", opts: ["A) 5 days", "B) 6 days", "C) 10 days", "D) 15 days"], ans: 1, 
+              expEn: "1/15 + 1/10 = 5/30 = 1/6. Together they take 6 days.", expAm: "1/15 + 1/10 = 1/6። አብረው ሲሰሩ 6 ቀን ይወስዳል።" },
+            { q: "In a class of 42 students, the number of girls is 1.1 times the number of boys. How many boys are there?", opts: ["A) 18", "B) 22", "C) 20", "D) 42"], ans: 2, 
+              expEn: "b + 1.1b = 42 => 2.1b = 42 => b = 42/2.1 = 20.", expAm: "b + 1.1b = 42 => 2.1b = 42 => b = 20 ወንዶች አሉ።" },
+            { q: "The sentence 'The speed of a car, v, was at least 30 km/h' translates to the inequality:", opts: ["A) v <= 30", "B) v < 30", "C) v > 30", "D) v >= 30"], ans: 3, 
+              expEn: "'At least' means greater than or equal to (>=).", expAm: "'ቢያንስ' (at least) ማለት ከ 30 እኩል ወይም ይበልጣል (>=) ማለት ነው።" },
+            { q: "'The cost p of a pen is less than two times the cost b of a book' can be written as:", opts: ["A) p < 2b", "B) p > 2b", "C) p <= 2b", "D) p >= 2b"], ans: 0, 
+              expEn: "p is less than (<) twice b (2b): p < 2b.", expAm: "p ከ 2b ያነሰ ነው (<)፡ p < 2b።" },
+            { q: "Hanan's income is Birr 13,926. To qualify to rent, her income must be at least three times the rent x. What is the maximum rent she qualifies for?", opts: ["A) Birr 13,926", "B) Birr 4642", "C) Birr 41,778", "D) Birr 4600"], ans: 1, 
+              expEn: "13926 >= 3x => x <= 13926/3 => x <= 4642.", expAm: "13926 >= 3x => x <= 13926/3 => x <= 4642 ብር ይሆናል።" },
+            { q: "Find two consecutive positive even integers whose sum is at most 10. Which of the following is a possible pair?", opts: ["A) 1 and 3", "B) 6 and 8", "C) 4 and 6", "D) 8 and 10"], ans: 2, 
+              expEn: "4+6 = 10, which is at most 10. (2 and 4 is also valid, but 4 and 6 is the correct option here).", expAm: "4+6 = 10፣ ድምሩ ከ 10 አይበልጥም።" },
+            { q: "A ride charges a Birr 50 pickup fee plus Birr 10 per km. What is the maximum number of kilometers you can travel for at most Birr 1350?", opts: ["A) 120 km", "B) 125 km", "C) 135 km", "D) 130 km"], ans: 3, 
+              expEn: "50 + 10x <= 1350 => 10x <= 1300 => x <= 130.", expAm: "50 + 10x <= 1350 => 10x <= 1300 => x <= 130 ኪ.ሜ።" },
+            { q: "Based on Graph 3, what is the y-intercept of the line?", opts: ["A) 4", "B) 2", "C) -2", "D) 0"], ans: 0, graphId: 3,
+              expEn: "The line crosses the y-axis at y = 4 (for y = 2x + 4).", expAm: "መስመሩ የ y-ዘንግን የሚቆርጠው በ y = 4 ላይ ነው።" },
+            { q: "Based on Graph 3, what is the slope of the line?", opts: ["A) 4", "B) 2", "C) 1/2", "D) -2"], ans: 1, graphId: 3,
+              expEn: "In y = mx + c, m is the slope. Here, m = 2.", expAm: "በ y = 2x + 4 ቀመር ውስጥ ማዘንበል (slope) 2 ነው።" },
+            { q: "Based on Graph 3, which quadrants does the line pass through?", opts: ["A) I, II, IV", "B) I, III, IV", "C) I, II, III", "D) II, III, IV"], ans: 2, graphId: 3,
+              expEn: "The line crosses the top right (I), top left (II), and bottom left (III).", expAm: "መስመሩ በሩብ 1፣ 2 እና 3 በኩል ያልፋል።" },
+            { q: "Based on Graph 3, what is the x-intercept of the line?", opts: ["A) 2", "B) 4", "C) 0", "D) -2"], ans: 3, graphId: 3,
+              expEn: "Set y=0: 0 = 2x + 4 => 2x = -4 => x = -2.", expAm: "y=0 ሲሆን፡ 2x = -4 => x = -2 የ x-መቁረጫ ነው።" },
+            { q: "Based on Graph 4, what is the y-intercept of the line?", opts: ["A) 2", "B) -1", "C) -2", "D) 0"], ans: 0, graphId: 4,
+              expEn: "The line crosses the y-axis at y = 2 (for y = -x + 2).", expAm: "መስመሩ የ y-ዘንግን የሚቆርጠው በ y = 2 ላይ ነው።" },
+            { q: "Based on Graph 4, what is the slope of the line?", opts: ["A) 1", "B) -1", "C) 2", "D) -2"], ans: 1, graphId: 4,
+              expEn: "In y = -x + 2, the coefficient of x is -1.", expAm: "በ y = -x + 2 ቀመር ውስጥ ማዘንበል (slope) -1 ነው።" },
+            { q: "Based on Graph 4, which quadrants does the line pass through?", opts: ["A) I, II, III", "B) II, III, IV", "C) I, II, IV", "D) I, III, IV"], ans: 2, graphId: 4,
+              expEn: "The line crosses top right (I), top left (II), and bottom right (IV).", expAm: "መስመሩ በሩብ 1፣ 2 እና 4 በኩል ያልፋል።" },
+            { q: "Based on Graph 4, what is the x-intercept of the line?", opts: ["A) -2", "B) -1", "C) 0", "D) 2"], ans: 3, graphId: 4,
+              expEn: "Set y=0: 0 = -x + 2 => x = 2.", expAm: "y=0 ሲሆን፡ x = 2 የ x-መቁረጫ ነው።" }
+        ];
+
+        // State variables
+        let currentQuestion = 0;
+        let score = 0;
+        let studentName = "";
+        let studentId = "";
+        let userAnswers = new Array(quizData.length).fill(null); // track answered questions
+        let timerInterval;
+        let timeLeft = 90 * 60; // 90 minutes in seconds
+
+        // DOM Elements
+        const screens = {
+            reg: document.getElementById('registration-screen'),
+            quiz: document.getElementById('quiz-screen'),
+            res: document.getElementById('result-screen')
+        };
+        const elements = {
+            qNum: document.getElementById('current-q-num'),
+            progBar: document.getElementById('progress-bar'),
+            qText: document.getElementById('question-text'),
+            optCont: document.getElementById('options-container'),
+            fbArea: document.getElementById('feedback-area'),
+            fbIcon: document.getElementById('feedback-icon'),
+            fbTitle: document.getElementById('feedback-title'),
+            fbExpEn: document.getElementById('feedback-exp-en'),
+            fbExpAm: document.getElementById('feedback-exp-am'),
+            btnBack: document.getElementById('btn-back'),
+            btnNext: document.getElementById('btn-next'),
+            btnSubmit: document.getElementById('btn-submit'),
+            timer: document.getElementById('timer'),
+            imgCont: document.getElementById('image-container'),
+            qCanvas: document.getElementById('question-canvas')
+        };
+
+        // Text-to-Speech Init
+        let synth = window.speechSynthesis;
+        let britishVoice = null;
+
+        // Try to load voices
+        function loadVoices() {
+            const voices = synth.getVoices();
+            britishVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Female')) || 
+                           voices.find(v => v.lang === 'en-GB') || 
+                           voices[0];
+        }
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function speak(text) {
+            if(synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            if(britishVoice) utterance.voice = britishVoice;
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+        }
+
+        // Functions
+        function drawGraph(graphId) {
+            const canvas = elements.qCanvas;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const unit = width / 16; // -8 to 8
+            const cx = width / 2;
+            const cy = height / 2;
+            
+            // Draw Grid
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for(let i = -8; i <= 8; i++) {
+                ctx.beginPath(); ctx.moveTo(cx + i*unit, 0); ctx.lineTo(cx + i*unit, height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, cy - i*unit); ctx.lineTo(width, cy - i*unit); ctx.stroke();
+            }
+            
+            // Axes
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, height); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.stroke(); 
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Inter';
+            ctx.fillText('x', width - 15, cy - 5);
+            ctx.fillText('y', cx + 5, 15);
+            
+            function plotPoint(x, y, color, label) {
+                const px = cx + x * unit;
+                const py = cy - y * unit;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(px, py, 5, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.font = 'bold 13px Inter';
+                ctx.fillText(label, px + 8, py - 5);
+            }
+            
+            function plotLine(m, c, color, label, isVertical=false, vX=0) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                if (isVertical) {
+                    ctx.moveTo(cx + vX*unit, 0);
+                    ctx.lineTo(cx + vX*unit, height);
+                } else {
+                    let y1 = m * (-8) + c;
+                    let y2 = m * (8) + c;
+                    ctx.moveTo(cx - 8*unit, cy - y1*unit);
+                    ctx.lineTo(cx + 8*unit, cy - y2*unit);
+                }
+                ctx.stroke();
+                
+                ctx.fillStyle = color;
+                ctx.font = 'bold 13px Inter';
+                if(isVertical) {
+                     ctx.fillText(label, cx + vX*unit + 8, 30);
+                } else {
+                     ctx.fillText(label, cx + 2*unit, cy - (m*2 + c)*unit - 10);
+                }
+            }
+
+            ctx.fillStyle = '#334155'; ctx.font = 'bold 16px Inter';
+            if (graphId === 1) {
+                ctx.fillText('Graph 1', 10, 20);
+                plotPoint(-2, 5, '#ef4444', 'A (-2, 5)');
+                plotPoint(3, -4, '#3b82f6', 'B (3, -4)');
+                plotPoint(0, -7, '#10b981', 'C (0, -7)');
+            } else if (graphId === 2) {
+                ctx.fillText('Graph 2', 10, 20);
+                plotLine(0, 0, '#ef4444', 'Line L1 (x=5)', true, 5);
+                plotLine(0, -4, '#3b82f6', 'Line L2 (y=-4)');
+            } else if (graphId === 3) {
+                ctx.fillText('Graph 3: slope = 2, y-intercept = 4', 10, 20);
+                plotLine(2, 4, '#9333ea', 'y = 2x + 4');
+            } else if (graphId === 4) {
+                ctx.fillText('Graph 4: slope = -1, y-intercept = 2', 10, 20);
+                plotLine(-1, 2, '#f97316', 'y = -x + 2');
+            }
+        }
+
+        function startQuiz() {
+            const name = document.getElementById('student-name').value.trim();
+            const id = document.getElementById('student-id').value.trim();
+            const err = document.getElementById('error-msg');
+            
+            if(!name || !id) {
+                err.textContent = "Please fill in both your Full Name and ID Number.";
+                err.classList.remove('hidden');
+                return;
+            }
+            
+            studentName = name;
+            studentId = id;
+            
+            screens.reg.classList.add('hidden');
+            screens.quiz.classList.remove('hidden');
+            screens.quiz.classList.add('flex');
+            
+            startTimer();
+            renderQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitQuiz();
+                } else {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft / 60);
+                    let s = timeLeft % 60;
+                    elements.timer.innerHTML = `<i class="fa-regular fa-clock"></i> Time: ${m}m ${s < 10 ? '0'+s : s}s`;
+                }
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            const data = quizData[currentQuestion];
+            elements.qNum.textContent = currentQuestion + 1;
+            elements.progBar.style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            elements.qText.textContent = data.q;
+            
+            // Image logic
+            if(data.graphId) {
+                elements.imgCont.classList.remove('hidden');
+                drawGraph(data.graphId);
+            } else {
+                elements.imgCont.classList.add('hidden');
+            }
+
+            elements.optCont.innerHTML = "";
+            elements.fbArea.classList.add('hidden');
+            
+            const hasAnswered = userAnswers[currentQuestion] !== null;
+
+            data.opts.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full text-left px-5 py-4 rounded-xl border-2 border-slate-200 bg-white font-medium text-slate-700 hover:border-blue-400 hover:bg-blue-50 focus:outline-none`;
+                btn.textContent = optText;
+                
+                if (hasAnswered) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled-option');
+                    if (index === data.ans) {
+                        btn.classList.add('correct-ans');
+                    } else if (index === userAnswers[currentQuestion]) {
+                        btn.classList.add('wrong-ans');
+                    }
+                } else {
+                    btn.onclick = () => selectOption(index);
+                }
+                
+                elements.optCont.appendChild(btn);
+            });
+
+            if (hasAnswered) {
+                showFeedback(userAnswers[currentQuestion] === data.ans, data.expEn, data.expAm);
+            }
+
+            elements.btnBack.disabled = currentQuestion === 0;
+            
+            if (currentQuestion === quizData.length - 1) {
+                elements.btnNext.classList.add('hidden');
+                elements.btnSubmit.classList.remove('hidden');
+            } else {
+                elements.btnNext.classList.remove('hidden');
+                elements.btnSubmit.classList.add('hidden');
+            }
+        }
+
+        function selectOption(selectedIndex) {
+            const data = quizData[currentQuestion];
+            const isCorrect = (selectedIndex === data.ans);
+            
+            userAnswers[currentQuestion] = selectedIndex;
+            if (isCorrect) score++;
+
+            const buttons = elements.optCont.children;
+            for(let i=0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                buttons[i].classList.add('disabled-option');
+                if(i === data.ans) {
+                    buttons[i].classList.add('correct-ans');
+                } else if(i === selectedIndex && !isCorrect) {
+                    buttons[i].classList.add('wrong-ans');
+                }
+            }
+
+            showFeedback(isCorrect, data.expEn, data.expAm);
+            
+            // Text to speech specific to the user's result
+            const speechText = isCorrect ? 
+                `Correct! ${data.expEn}` : 
+                `Incorrect. The correct answer was ${data.opts[data.ans].substring(0,2)}. ${data.expEn}`;
+            speak(speechText);
+        }
+
+        function showFeedback(isCorrect, expEn, expAm) {
+            elements.fbArea.classList.remove('hidden');
+            elements.fbArea.classList.remove('bg-emerald-50', 'border-emerald-500', 'text-emerald-800', 'bg-red-50', 'border-red-500', 'text-red-800');
+            
+            if (isCorrect) {
+                elements.fbArea.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-800');
+                elements.fbIcon.className = "fa-solid fa-circle-check text-emerald-600";
+                elements.fbTitle.textContent = "Correct!";
+            } else {
+                elements.fbArea.classList.add('bg-red-50', 'border-red-500', 'text-red-800');
+                elements.fbIcon.className = "fa-solid fa-circle-xmark text-red-600";
+                elements.fbTitle.textContent = "Incorrect!";
+            }
+            
+            elements.fbExpEn.textContent = expEn;
+            elements.fbExpAm.textContent = expAm;
+        }
+
+        function nextQuestion() {
+            if (synth.speaking) synth.cancel();
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (synth.speaking) synth.cancel();
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                renderQuestion();
+            }
+        }
+
+        function submitQuiz() {
+            clearInterval(timerInterval);
+            if (synth.speaking) synth.cancel();
+            
+            // Check unanswered
+            userAnswers.forEach((ans, idx) => {
+                if(ans === quizData[idx].ans) {
+                    // Already counted in selectOption, wait, I only added to score if they clicked.
+                    // If we want accurate score, re-calculate here.
+                }
+            });
+            
+            // Recalculate robustly
+            score = 0;
+            let wrongOrSkipped = 0;
+            userAnswers.forEach((ans, idx) => {
+                if(ans === quizData[idx].ans) score++;
+                else wrongOrSkipped++;
+            });
+
+            screens.quiz.classList.remove('flex');
+            screens.quiz.classList.add('hidden');
+            screens.res.classList.remove('hidden');
+            screens.res.classList.add('flex');
+
+            document.getElementById('res-name').textContent = studentName;
+            document.getElementById('res-id').textContent = studentId;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-percentage').textContent = Math.round((score / quizData.length) * 100);
+            document.getElementById('res-correct').textContent = score;
+            document.getElementById('res-wrong').textContent = wrongOrSkipped;
+            
+            speak(`Quiz completed, ${studentName}. You scored ${score} out of ${quizData.length}.`);
+        }
+
+        function sendEmail() {
+            const subject = encodeURIComponent(`Quiz Results: ${studentName} (ID: ${studentId})`);
+            const percentage = Math.round((score / quizData.length) * 100);
+            const body = encodeURIComponent(`Teacher Dashboard Summary\n\nStudent Name: ${studentName}\nID Number: ${studentId}\nFinal Score: ${score} / ${quizData.length}\nPercentage: ${percentage}%\n\nPlease find the student's automated assessment results recorded above.`);
+            
+            window.location.href = `mailto:mesayferedegn2@gmail.com?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>
